@@ -9,7 +9,6 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
 http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mulesoft.org/schema/mule/secure-property-placeholder/current/mule-secure-property-placeholder.xsd">
-    <context:property-placeholder location="sfaccounts-${env}.properties"/>
     <http:listener-config name="HTTP_Listener_Configuration" protocol="HTTPS" host="0.0.0.0" port="${http.lisener.port}" doc:name="HTTP Listener Configuration" tlsContext-ref="Local_TLS_Context">
     </http:listener-config>
     <tls:context name="Local_TLS_Context" doc:name="TLS Context">
