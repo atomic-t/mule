@@ -1,4 +1,4 @@
-<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
     xmlns:spring="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
@@ -10,8 +10,28 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
 http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
-http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd">
-    <flow name="implementationFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
+http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <flow name="sfaccountsGetFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccounts" doc:name="HTTP" allowedMethods="GET"/>
+        <flow-ref name="setParametersSubFlow" doc:name="setParametersSubFlow"/>
+        <sfdc:query config-ref="Salesforce__Basic_Authentication"
+        	query="dsql:#['SELECT BillingCity,BillingCountry,BillingPostalCode,BillingState,BillingStreet,Name,Phone FROM Account  WHERE Name like ''#[flowVars.name]%''' ++ if(isEmpty(flowVars.city) '' else 'and BillingCity = ''#[flowVars.city]''' ++ 'ORDER BY LastModifiedDate DESC']" doc:name="Salesforce"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <logger level="INFO" doc:name="Logger" message="#[payload]"/>
+    </flow>
+    <sub-flow name="setParametersSubFlow">
+        <set-variable variableName="name" value="#[message.inboundProperties.'http.query.params'.name]" doc:name="setNameVar"/>
+        <set-variable variableName="city" value="#[message.inboundProperties.'http.query.params'.city]" doc:name="setCityVar"/>
+    </sub-flow>
+    <flow name="testSfFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccountsTest" allowedMethods="GET" doc:name="HTTP"/>
+        <logger level="INFO" doc:name="Logger"/>
     </flow>
 </mule>
