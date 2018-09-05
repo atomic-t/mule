@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
 	xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:secure-property-placeholder="http://www.mulesoft.org/schema/mule/secure-property-placeholder" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:context="http://www.springframework.org/schema/context" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:spring="http://www.springframework.org/schema/beans" 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
@@ -17,15 +19,22 @@ http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mules
     <tls:context name="Local_TLS_Context" doc:name="TLS Context">
         <tls:key-store type="${tls.type}" path="${tls.path}" alias="${tls.alias}" keyPassword="${tls.keypassword}" password="${tls.password}" algorithm="${tls.algorithm}"/>
     </tls:context>
+    <validation:config name="Invalid_Parameter_Validation_Configuration" doc:name="Validation Configuration" />
+    
     <secure-property-placeholder:config name="Secure_Property_Placeholder" key="${secure.key}" location="sfaccounts-secure-${env}.properties" doc:name="Secure Property Placeholder"/>
     <configuration defaultExceptionStrategy-ref="globalChoice_Exception_Strategy" doc:name="Configuration">
         <http:config useTransportForUris="false"/>
     </configuration>
     <choice-exception-strategy name="globalChoice_Exception_Strategy">
+        <catch-exception-strategy when="#[exception.causedBy(sfaccounts.exception.InvalidParameterException)]" doc:name="Invalid Parameter Exception Strategy">
+            <set-payload value="#[exception.message]" doc:name="Set Payload Msg"/>
+            <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
+            <logger message="#[exception]" level="WARN" doc:name="Logger"/>
+        </catch-exception-strategy>
         <catch-exception-strategy doc:name="All Other Exceptions Strategy">
-            <set-payload value="Unkown exception occured. #[ ' \n' + exception]" doc:name="Set Payload"/>
-            <set-property propertyName="http.status" value="500" doc:name="Property"/>
-            <logger level="INFO" doc:name="Logger"/>
+            <set-payload value="Opps... server exception occured. #[ ' \n' + exception]" doc:name="Set Payload"/>
+            <set-property propertyName="http.status" value="500" doc:name="Code 500"/>
+            <logger message="#[exception]" level="ERROR" doc:name="Logger"/>
         </catch-exception-strategy>
     </choice-exception-strategy>
 </mule>

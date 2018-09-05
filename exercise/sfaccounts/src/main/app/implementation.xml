@@ -1,4 +1,4 @@
-<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
     xmlns:spring="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
@@ -12,23 +12,32 @@ http://www.springframework.org/schema/security http://www.springframework.org/sc
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
 http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
 http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
-http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
     <flow name="sfaccountsGetFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccounts" doc:name="HTTP" allowedMethods="GET"/>
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccounts" allowedMethods="GET" doc:name="HTTP"/>
         <flow-ref name="setParametersSubFlow" doc:name="setParametersSubFlow"/>
-        <sfdc:query config-ref="Salesforce__Basic_Authentication"
-        	query="dsql:#['SELECT BillingCity,BillingCountry,BillingPostalCode,BillingState,BillingStreet,Name,Phone FROM Account  WHERE Name like ''#[flowVars.name]%''' ++ if(isEmpty(flowVars.city) '' else 'and BillingCity = ''#[flowVars.city]''' ++ 'ORDER BY LastModifiedDate DESC']" doc:name="Salesforce"/>
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT BillingCity,BillingCountry,BillingPostalCode,BillingState,BillingStreet,Name,Phone FROM Account  WHERE #[flowVars.queryCond] ORDER BY LastModifiedDate DESC" doc:name="Salesforce Query"/>
         <dw:transform-message doc:name="Transform Message">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
 payload]]></dw:set-payload>
         </dw:transform-message>
-        <logger level="INFO" doc:name="Logger" message="#[payload]"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
     </flow>
+    <sub-flow name="validateAccountNameInput">
+        <expression-component doc:name="setMandatoryField"><![CDATA[flowVars.mandatoryParam = 'name']]></expression-component>
+        <validation:is-not-empty message="Query parameter: #[flowVars.mandatoryParam] cannot be empty" exceptionClass="sfaccounts.exception.InvalidParameterException" value="#[flowVars[flowVars.mandatoryParam]]" doc:name="mandatory field Not Empty"/>
+    </sub-flow>
     <sub-flow name="setParametersSubFlow">
         <set-variable variableName="name" value="#[message.inboundProperties.'http.query.params'.name]" doc:name="setNameVar"/>
         <set-variable variableName="city" value="#[message.inboundProperties.'http.query.params'.city]" doc:name="setCityVar"/>
+        <flow-ref name="validateAccountNameInput" doc:name="validateAccountNameInput Reference"/>
+        <expression-component doc:name="build Query Condition"><![CDATA[flowVars.queryCond = "Name like '#[flowVars.name]%' ";
+if (flowVars.city != null) {
+	flowVars.queryCond += "and BillingCity = '#[flowVars.city]'"
+}	]]></expression-component>
     </sub-flow>
     <flow name="testSfFlow">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccountsTest" allowedMethods="GET" doc:name="HTTP"/>
