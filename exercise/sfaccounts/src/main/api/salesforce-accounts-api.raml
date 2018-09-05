@@ -1,0 +1,107 @@
+#%RAML 1.0 
+title: Salesforce Accounts API
+types: 
+  Account: !include datatypes/Account.raml
+/sfaccounts:
+  get:
+    displayName: query Salesforce accounts
+    queryParameters: 
+      name:
+        description: account name begin with
+        type: string
+      city:
+        description: exact city name
+        type: string
+        required: false
+    responses: 
+      200:
+        body: 
+          application/json:
+            type: Account[]       
+            examples: !include examples/AccountsExample.raml
+      400:
+        body:
+          application/json:
+            example:
+              message: | 
+                Query parameter: name cannot be empty
+      404:
+        body:
+          application/json:
+            example:
+              message: |
+                Cannot find any accounts.                
+  post:
+    displayName: create salesforce account
+    body: 
+      application/json:
+        type: Account
+        example: !include examples/SingleAccountWithoutIdExample.raml
+    responses: 
+      201:
+        body:
+          application/json:
+            example:
+              message: |
+                Account creation successful
+      400:
+        body:
+          application/json:
+            example: 
+              message: |
+                Error: Input parameter name and street cannot be empty   
+  /{ID}:
+    get:
+      displayName: get a specific account by id
+      responses: 
+        200:
+          body: 
+            application/json:
+              type: Account
+              example: !include examples/SingleAccountExample.raml
+        404:
+          body:
+            application/json:
+              example:
+                message: |
+                  Account with id={ID} not found!
+      
+
+    put:
+      displayName: update account with id={ID}
+      body: 
+        application/json:
+          type: Account
+          example: !include examples/SingleAccountWithoutIdExample.raml
+      responses: 
+        200:
+          body:
+            application/json:
+              example:
+                message: |
+                  Account updated successfully!      
+        404:
+          body:
+            application/json:
+              example:
+                message: |
+                  Account with id={ID} not found!            
+    delete:
+      displayName: delete the account with id={ID}
+      responses: 
+        200:
+          body:
+            application/json:
+              example:
+                message: |
+                  Account deleted successfully!      
+        404:
+          body:
+            application/json:
+              example:
+                message: |
+                  Account with id={ID} not found!     
+    
+
+
+

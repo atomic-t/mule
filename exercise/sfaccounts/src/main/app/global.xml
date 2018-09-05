@@ -26,7 +26,7 @@ http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mules
         <http:config useTransportForUris="false"/>
     </configuration>
     <choice-exception-strategy name="globalChoice_Exception_Strategy">
-        <catch-exception-strategy when="#[exception.causedBy(sfaccounts.exception.InvalidParameterException)]" doc:name="Invalid Parameter Exception Strategy">
+        <catch-exception-strategy when="#[exception.causedBy(sfaccounts.exception.InvalidParameterException) or exception.causedBy(java.lang.IllegalArgumentException) ]" doc:name="Invalid Parameter Exception Strategy">
             <set-payload value="#[exception.message]" doc:name="Set Payload Msg"/>
             <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
             <logger message="#[exception]" level="WARN" doc:name="Logger"/>

@@ -1,4 +1,4 @@
-<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
     xmlns:spring="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
@@ -13,11 +13,15 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
 http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
 http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
-http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
-    <flow name="sfaccountsGetFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccounts" allowedMethods="GET" doc:name="HTTP"/>
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <sub-flow name="jsonBodyToObject">
+        <byte-array-to-object-transformer doc:name="Byte Array to Object"/>
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="JSON to Object"/>
+    </sub-flow>
+    <flow name="getFlow">
         <flow-ref name="setParametersSubFlow" doc:name="setParametersSubFlow"/>
-        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT BillingCity,BillingCountry,BillingPostalCode,BillingState,BillingStreet,Name,Phone FROM Account  WHERE #[flowVars.queryCond] ORDER BY LastModifiedDate DESC" doc:name="Salesforce Query"/>
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Id,Name,Phone,BillingCity,BillingCountry,BillingPostalCode,BillingState,BillingStreet FROM Account  WHERE #[flowVars.queryCond] ORDER BY LastModifiedDate DESC" doc:name="Salesforce Query"/>
         <dw:transform-message doc:name="Transform Message">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
@@ -25,6 +29,62 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 payload]]></dw:set-payload>
         </dw:transform-message>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="postFlow">
+        <flow-ref name="jsonBodyToObject" doc:name="jsonBodyToObject"/>
+        <validation:all doc:name="Validate Input">
+            <validation:validations>
+                <validation:is-not-empty value="#[payload.Name]" message="Name cannot be empty!" exceptionClass="java.lang.IllegalArgumentException"/>
+                <validation:is-not-empty value="#[payload.BillingStreet]" message="BillingStreet cannot be empty" exceptionClass="java.lang.IllegalArgumentException"/>
+            </validation:validations>
+        </validation:all>
+        <set-variable variableName="input" value="#[payload]" doc:name="Variable"/>
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Name FROM Account WHERE Name = '#[payload.Name]'" doc:name="check Name Existence"/>
+        <set-variable variableName="exists" value="#[payload.size() &gt; 0]" doc:name="Variable"/>
+        <choice doc:name="Choice">
+            <when expression="#[payload.size() &gt; 0]">
+                <set-payload value="{ &quot;message&quot; : &quot;Account with such name '#[flowVars.input.Name]' already exists, cannot create a new one&quot;}" doc:name="Set Payload"/>
+                <set-property propertyName="http.status" value="400" doc:name="Property"/>
+            </when>
+            <otherwise>
+                <dw:transform-message doc:name="Transform Message" metadata:id="038ab7b4-3094-4a5a-be01-55ec8c4bca86">
+                    <dw:input-payload mimeType="application/json"/>
+                    <dw:input-variable mimeType="application/json" variableName="input"/>
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+[{
+	Name: flowVars.input.Name,
+	BillingStreet: flowVars.input.BillingStreet,
+	BillingCity: flowVars.input.BillingCity,
+	BillingState: flowVars.input.BillingState,
+	BillingPostalCode: flowVars.input.BillingPostalCode,
+	BillingCountry: flowVars.input.BillingCountry,
+	Phone: flowVars.input.Phone
+}]]]></dw:set-payload>
+                </dw:transform-message>
+                <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce Create">
+                    <sfdc:objects ref="#[payload]"/>
+                </sfdc:create>
+            </otherwise>
+        </choice>
+        <set-property propertyName="Content-Type" value="application/json" doc:name="set content type"/>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="getByIdFlow">
+        <set-payload value="{
+&quot;message&quot; : &quot;Account updated successfully!&quot;
+}" doc:name="Copy_of_Set Payload"/>
+    </flow>
+    <flow name="putByIdFlow">
+        <set-payload value="{
+&quot;message&quot; : &quot;Account updated successfully!&quot;
+}" doc:name="Set Payload"/>
+    </flow>
+    <flow name="deleteByIdFlow">
+        <set-payload value="{
+&quot;message&quot; : &quot;Account updated successfully!&quot;
+}" doc:name="Copy_of_Set Payload"/>
     </flow>
     <sub-flow name="validateAccountNameInput">
         <expression-component doc:name="setMandatoryField"><![CDATA[flowVars.mandatoryParam = 'name']]></expression-component>
