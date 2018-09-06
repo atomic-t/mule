@@ -46,33 +46,32 @@ payload]]></dw:set-payload>
                 <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
             </when>
             <otherwise>
-                <set-payload value="#[flowVars.input]"  doc:name="load input"/>
-                <dw:transform-message doc:name="Transform Message" metadata:id="f99f62c9-8f19-4887-97bf-196464a8fe99">
+                <dw:transform-message doc:name="set Input for SF" metadata:id="f99f62c9-8f19-4887-97bf-196464a8fe99">
                     <dw:input-payload/>
-                    <dw:input-variable mimeType="application/json" variableName="input"/>
+                    <dw:input-variable  variableName="input"/>
                     <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
 [{
-	Name: payload.Name,
-	BillingStreet: payload.BillingStreet,
-	BillingCity: payload.BillingCity,
-	BillingState: payload.BillingState,
-	BillingPostalCode: payload.BillingPostalCode,
-	BillingCountry: payload.BillingCountry,
-	Phone: payload.Phone
+	Name: flowVars.input.Name,
+	BillingStreet: flowVars.input.BillingStreet,
+	BillingCity: flowVars.input.BillingCity,
+	BillingState: flowVars.input.BillingState,
+	BillingPostalCode: flowVars.input.BillingPostalCode,
+	BillingCountry: flowVars.input.BillingCountry,
+	Phone: flowVars.input.Phone
 }]]]></dw:set-payload>
                 </dw:transform-message>
                 <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce Create">
                     <sfdc:objects ref="#[payload]"/>
                 </sfdc:create>
-                <dw:transform-message doc:name="Transform Message" metadata:id="11fa61f9-cfb8-4e09-8323-1016106105be">
+                <dw:transform-message doc:name="transform result msg" metadata:id="11fa61f9-cfb8-4e09-8323-1016106105be">
                     <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
-{
-	message: 'Account creation success = ' ++ payload.success ++ ' id=' ++ payload.id ++ '. '
-}]]></dw:set-payload>
+payload map ((payload01 , indexOfPayload01) -> {
+	message:  'Account creation success=' ++ payload01.success as :string ++ ' new account id=' ++ payload01.id ++ '. '
+})]]></dw:set-payload>
                 </dw:transform-message>
             </otherwise>
         </choice>
