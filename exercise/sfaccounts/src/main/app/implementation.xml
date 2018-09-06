@@ -29,6 +29,43 @@ payload]]></dw:set-payload>
         </dw:transform-message>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
     </flow>
+    <flow name="getByIdFlow">
+        <sfdc:retrieve config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce">
+            <sfdc:ids>
+                <sfdc:id>#[flowVars.ID]</sfdc:id>
+            </sfdc:ids>
+            <sfdc:fields>
+                <sfdc:field>Id</sfdc:field>
+                <sfdc:field>Name</sfdc:field>
+                <sfdc:field>Phone</sfdc:field>
+                <sfdc:field>BillingCity</sfdc:field>
+                <sfdc:field>BillingCountry</sfdc:field>
+                <sfdc:field>BillingPostalCode</sfdc:field>
+                <sfdc:field>BillingState</sfdc:field>
+                <sfdc:field>BillingStreet</sfdc:field>
+            </sfdc:fields>
+        </sfdc:retrieve>
+        <dw:transform-message doc:name="Transform Message" metadata:id="19c38b7b-418c-44e4-908e-9c9214e8e5d0">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map ((payload01 , indexOfPayload01) -> {
+	BillingCountry: payload01.BillingCountry,
+	BillingCity: payload01.BillingCity,
+	BillingStreet: payload01.BillingStreet,
+	Phone: payload01.Phone,
+	BillingPostalCode: payload01.BillingPostalCode,
+	BillingState: payload01.BillingState,
+	Id: payload01.Id,
+	Name: payload01.Name
+})]]></dw:set-payload>
+        </dw:transform-message>
+        <logger level="INFO" doc:name="Logger"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="404" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot; : &quot;Account with ID='#[flowVars.ID]' doesn't exist!&quot;}" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+    </flow>
     <flow name="postFlow">
         <json:json-to-object-transformer returnClass="java.util.Map" mimeType="application/json" doc:name="JSON to Object" metadata:id="72d5f2d3-e43d-4b96-989f-4138e0117a83"/>
         <validation:all doc:name="Validate Input">
@@ -70,7 +107,7 @@ payload]]></dw:set-payload>
 %output application/json
 ---
 payload map ((payload01 , indexOfPayload01) -> {
-	message:  'Account creation success=' ++ payload01.success as :string ++ ' new account id=' ++ payload01.id ++ '. '
+	message:  'Account creation success=' ++ payload01.success as :string ++ ' account id=' ++ payload01.id ++ '. '
 })]]></dw:set-payload>
                 </dw:transform-message>
             </otherwise>
@@ -78,47 +115,42 @@ payload map ((payload01 , indexOfPayload01) -> {
         <set-property propertyName="Content-Type" value="application/json" doc:name="set content type"/>
         <logger level="INFO" doc:name="Logger" message="#[payload]"/>
     </flow>
-    <flow name="getByIdFlow">
-        <sfdc:retrieve config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce">
-            <sfdc:ids>
-				<sfdc:id>#[flowVars.ID]</sfdc:id>
-            </sfdc:ids>
-            <sfdc:fields>
-				<sfdc:field>Id</sfdc:field>
-         		<sfdc:field>Name</sfdc:field>         		
-				<sfdc:field>Phone</sfdc:field>
-         		<sfdc:field>BillingCity</sfdc:field>         		
-				<sfdc:field>BillingCountry</sfdc:field>
-         		<sfdc:field>BillingPostalCode</sfdc:field>         		
-				<sfdc:field>BillingState</sfdc:field>
-         		<sfdc:field>BillingStreet</sfdc:field>         		  		
-            </sfdc:fields>
-        </sfdc:retrieve>
-        <dw:transform-message doc:name="Transform Message" metadata:id="19c38b7b-418c-44e4-908e-9c9214e8e5d0">
+    <flow name="putByIdFlow">
+        <json:json-to-object-transformer returnClass="java.util.Map" mimeType="application/json" doc:name="JSON to Object" metadata:id="72d5f2d3-e43d-4b96-989f-4138e0117a83"/>
+        <validation:all doc:name="Validate Input">
+            <validation:validations>
+                <validation:is-not-empty value="#[payload.Name]" message="Name cannot be empty!" exceptionClass="java.lang.IllegalArgumentException"/>
+                <validation:is-not-empty value="#[payload.BillingStreet]" message="BillingStreet cannot be empty" exceptionClass="java.lang.IllegalArgumentException"/>
+            </validation:validations>
+        </validation:all>
+        <json:object-to-json-transformer doc:name="Object to JSON" metadata:id="7154f532-74fb-406c-b9e8-58d2fe77cbf0"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="d7dc104f-27fc-4162-bbeb-b4bcef66783c">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	Id: flowVars.ID,
+	Name: payload.Name,
+	BillingStreet: payload.BillingStreet,
+	BillingCity: payload.BillingCity,
+	BillingState: payload.BillingState,
+	BillingPostalCode: payload.BillingPostalCode,
+	BillingCountry: payload.BillingCountry,
+	Phone: payload.Phone
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:update-single config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="c8131e38-4ea9-4cec-b3f8-273085b7214c">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
-payload map ((payload01 , indexOfPayload01) -> {
-	BillingCountry: payload01.BillingCountry,
-	BillingCity: payload01.BillingCity,
-	BillingStreet: payload01.BillingStreet,
-	Phone: payload01.Phone,
-	BillingPostalCode: payload01.BillingPostalCode,
-	BillingState: payload01.BillingState,
-	Id: payload01.Id,
-	Name: payload01.Name
-})]]></dw:set-payload>
+{
+	message: 'Account updated success=' ++ payload.success as :string ++ ' account id=' ++ payload.id,
+	errors: payload.errors
+}]]></dw:set-payload>
         </dw:transform-message>
-        <logger level="INFO" doc:name="Logger"/>
-        <catch-exception-strategy doc:name="Catch Exception Strategy">
-            <set-property propertyName="http.status" value="404" doc:name="Property"/>
-            <set-payload value="{ &quot;message&quot; : &quot;Account with ID='#[flowVars.ID]' doesn't exist!&quot;}" doc:name="Set Payload"/>
-        </catch-exception-strategy>
-    </flow>
-    <flow name="putByIdFlow">
-        <set-payload value="{
-&quot;message&quot; : &quot;Account updated successfully!&quot;
-}" doc:name="Set Payload"/>
+        <logger message="#[payload]" level="INFO" doc:name="Copy_of_Logger"/>
     </flow>
     <flow name="deleteByIdFlow">
         <set-payload value="{
@@ -138,8 +170,4 @@ if (flowVars.city != null) {
 	flowVars.queryCond += "and BillingCity = '#[flowVars.city]'"
 }	]]></expression-component>
     </sub-flow>
-    <flow name="testSfFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccountsTest" allowedMethods="GET" doc:name="HTTP"/>
-        <logger level="INFO" doc:name="Logger"/>
-    </flow>
 </mule>
