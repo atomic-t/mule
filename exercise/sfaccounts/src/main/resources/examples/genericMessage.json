@@ -1,3 +1,7 @@
 {
-	"message" : "Account creation successful with id=xxxxx!"
+	"message" : "Account creation successful with id=xxxxx!",
+	"details" : {
+			"external_message" : "",
+			"external_status_code" : ""
+		}
 }

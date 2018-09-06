@@ -15,19 +15,33 @@ http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfd
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
 http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
-    <sub-flow name="jsonBodyToObject">
-        <byte-array-to-object-transformer doc:name="Byte Array to Object"/>
+    <sub-flow name="singleSaveCheckSubflow">
+        <choice doc:name="Choice">
+            <when expression="#[payload.success == false]">
+                <dw:transform-message doc:name="Transform Message" metadata:id="6c427cdf-0add-4d63-8735-fa0a7308d9cb">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	message : 'Account ' ++ flowVars.ID ++ ' save failed.',
+	errors: payload.errors map {
+		external_status_code: $.statusCode as :string
+	}	
+}
+]]></dw:set-payload>
+                </dw:transform-message>
+                <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
+            </when>
+            <otherwise>
+                <set-payload value="{ &quot;message&quot; : &quot;Account id=#[flowVars.ID] saved successfully!&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+        <logger message="#[payload]" level="INFO" doc:name="Copy_of_Logger"/>
     </sub-flow>
     <flow name="getFlow">
         <flow-ref name="setParametersSubFlow" doc:name="setParametersSubFlow"/>
         <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Id,Name,Phone,BillingCity,BillingCountry,BillingPostalCode,BillingState,BillingStreet FROM Account  WHERE #[flowVars.queryCond] ORDER BY LastModifiedDate DESC" doc:name="Salesforce Query"/>
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-payload]]></dw:set-payload>
-        </dw:transform-message>
-        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <flow-ref name="accountListToJsonSubFlow" doc:name="accountListToJsonSubFlow"/>
     </flow>
     <flow name="getByIdFlow">
         <sfdc:retrieve config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce">
@@ -45,33 +59,31 @@ payload]]></dw:set-payload>
                 <sfdc:field>BillingStreet</sfdc:field>
             </sfdc:fields>
         </sfdc:retrieve>
-        <dw:transform-message doc:name="Transform Message" metadata:id="19c38b7b-418c-44e4-908e-9c9214e8e5d0">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-payload map ((payload01 , indexOfPayload01) -> {
-	BillingCountry: payload01.BillingCountry,
-	BillingCity: payload01.BillingCity,
-	BillingStreet: payload01.BillingStreet,
-	Phone: payload01.Phone,
-	BillingPostalCode: payload01.BillingPostalCode,
-	BillingState: payload01.BillingState,
-	Id: payload01.Id,
-	Name: payload01.Name
-})]]></dw:set-payload>
-        </dw:transform-message>
-        <logger level="INFO" doc:name="Logger"/>
+        <flow-ref name="accountListToJsonSubFlow" doc:name="accountListToJsonSubFlow"/>
         <catch-exception-strategy doc:name="Catch Exception Strategy">
-            <set-property propertyName="http.status" value="404" doc:name="Property"/>
-            <set-payload value="{ &quot;message&quot; : &quot;Account with ID='#[flowVars.ID]' doesn't exist!&quot;}" doc:name="Set Payload"/>
+            <flow-ref name="404Subflow" doc:name="404Subflow"/>
         </catch-exception-strategy>
     </flow>
     <flow name="postFlow">
-        <json:json-to-object-transformer returnClass="java.util.Map" mimeType="application/json" doc:name="JSON to Object" metadata:id="72d5f2d3-e43d-4b96-989f-4138e0117a83"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="ddab7e10-0c5a-41d8-8778-96ae1464f984">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	Name: payload.Name,
+	BillingStreet: payload.BillingStreet,
+	BillingCity: payload.BillingCity,
+	BillingState: payload.BillingState,
+	BillingPostalCode: payload.BillingPostalCode,
+	BillingCountry: payload.BillingCountry,
+	Phone: payload.Phone
+}]]></dw:set-payload>
+        </dw:transform-message>
         <validation:all doc:name="Validate Input">
             <validation:validations>
-                <validation:is-not-empty value="#[payload.Name]" message="Name cannot be empty!" exceptionClass="java.lang.IllegalArgumentException"/>
-                <validation:is-not-empty value="#[payload.BillingStreet]" message="BillingStreet cannot be empty" exceptionClass="java.lang.IllegalArgumentException"/>
+                <validation:is-not-empty value="#[payload['Name']]" message="Name cannot be empty!" exceptionClass="java.lang.IllegalArgumentException"/>
+                <validation:is-not-empty value="#[payload['BillingStreet']]" message="BillingStreet cannot be empty" exceptionClass="java.lang.IllegalArgumentException"/>
             </validation:validations>
         </validation:all>
         <set-variable variableName="input" value="#[payload]" doc:name="save input body"/>
@@ -83,9 +95,8 @@ payload map ((payload01 , indexOfPayload01) -> {
                 <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
             </when>
             <otherwise>
-                <dw:transform-message doc:name="set Input for SF" metadata:id="f99f62c9-8f19-4887-97bf-196464a8fe99">
-                    <dw:input-payload/>
-                    <dw:input-variable  variableName="input"/>
+                <dw:transform-message doc:name="restore input" metadata:id="02ae39d7-395a-41cd-acbb-4bdb172dab87">
+                    <dw:input-variable variableName="input"/>
                     <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
@@ -102,28 +113,13 @@ payload map ((payload01 , indexOfPayload01) -> {
                 <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce Create">
                     <sfdc:objects ref="#[payload]"/>
                 </sfdc:create>
-                <dw:transform-message doc:name="transform result msg" metadata:id="11fa61f9-cfb8-4e09-8323-1016106105be">
-                    <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-payload map ((payload01 , indexOfPayload01) -> {
-	message:  'Account creation success=' ++ payload01.success as :string ++ ' account id=' ++ payload01.id ++ '. '
-})]]></dw:set-payload>
-                </dw:transform-message>
+                <flow-ref name="singleSaveCheckSubflow" doc:name="singleSaveCheckSubflow"/>
             </otherwise>
         </choice>
         <set-property propertyName="Content-Type" value="application/json" doc:name="set content type"/>
         <logger level="INFO" doc:name="Logger" message="#[payload]"/>
     </flow>
     <flow name="putByIdFlow">
-        <json:json-to-object-transformer returnClass="java.util.Map" mimeType="application/json" doc:name="JSON to Object" metadata:id="72d5f2d3-e43d-4b96-989f-4138e0117a83"/>
-        <validation:all doc:name="Validate Input">
-            <validation:validations>
-                <validation:is-not-empty value="#[payload.Name]" message="Name cannot be empty!" exceptionClass="java.lang.IllegalArgumentException"/>
-                <validation:is-not-empty value="#[payload.BillingStreet]" message="BillingStreet cannot be empty" exceptionClass="java.lang.IllegalArgumentException"/>
-            </validation:validations>
-        </validation:all>
-        <json:object-to-json-transformer doc:name="Object to JSON" metadata:id="7154f532-74fb-406c-b9e8-58d2fe77cbf0"/>
         <dw:transform-message doc:name="Transform Message" metadata:id="d7dc104f-27fc-4162-bbeb-b4bcef66783c">
             <dw:input-payload mimeType="application/json"/>
             <dw:set-payload><![CDATA[%dw 1.0
@@ -140,34 +136,79 @@ payload map ((payload01 , indexOfPayload01) -> {
 	Phone: payload.Phone
 }]]></dw:set-payload>
         </dw:transform-message>
+        <validation:all doc:name="Validate Input">
+            <validation:validations>
+                <validation:is-not-empty value="#[payload['BillingStreet']]" message="BillingStreet cannot be empty" exceptionClass="java.lang.IllegalArgumentException"/>
+                <validation:is-not-empty value="#[payload['Name']]" message="Name cannot be empty!" exceptionClass="java.lang.IllegalArgumentException"/>
+            </validation:validations>
+        </validation:all>
         <sfdc:update-single config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce"/>
-        <dw:transform-message doc:name="Transform Message" metadata:id="c8131e38-4ea9-4cec-b3f8-273085b7214c">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-{
-	message: 'Account updated success=' ++ payload.success as :string ++ ' account id=' ++ payload.id,
-	errors: payload.errors
-}]]></dw:set-payload>
-        </dw:transform-message>
-        <logger message="#[payload]" level="INFO" doc:name="Copy_of_Logger"/>
+        <flow-ref name="singleSaveCheckSubflow" doc:name="singleSaveCheckSubflow"/>
     </flow>
     <flow name="deleteByIdFlow">
-        <set-payload value="{
-&quot;message&quot; : &quot;Account updated successfully!&quot;
-}" doc:name="Copy_of_Set Payload"/>
+        <expression-component doc:name="Expression"><![CDATA[payload = [flowVars.ID]]]></expression-component>
+        <sfdc:delete config-ref="Salesforce__Basic_Authentication" doc:name="Salesforce"/>
+        <choice doc:name="Choice">
+            <when expression="#[payload[0].success == false]">
+                <dw:transform-message doc:name="Transform Message" metadata:id="6c427cdf-0add-4d63-8735-fa0a7308d9cb">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map ((payload01, indexOfPayload01) -> {
+	message : 'Account ' ++ flowVars.ID ++ ' deletion failed.',
+	errors: payload01.errors map {
+		external_status_code: $.statusCode as :string
+	}	
+})
+]]></dw:set-payload>
+                </dw:transform-message>
+                <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
+            </when>
+            <otherwise>
+                <set-payload value="{ &quot;message&quot; : &quot;Account id=#[flowVars.ID] deleted successfully!&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+        <set-property propertyName="Content-Type" value="application/json" doc:name="set content type"/>
+        <logger level="INFO" doc:name="Logger"/>
     </flow>
-    <sub-flow name="validateAccountNameInput">
-        <expression-component doc:name="setMandatoryField"><![CDATA[flowVars.mandatoryParam = 'name']]></expression-component>
-        <validation:is-not-empty message="Query parameter: #[flowVars.mandatoryParam] cannot be empty" exceptionClass="sfaccounts.exception.InvalidParameterException" value="#[flowVars[flowVars.mandatoryParam]]" doc:name="mandatory field Not Empty"/>
-    </sub-flow>
     <sub-flow name="setParametersSubFlow">
         <set-variable variableName="name" value="#[message.inboundProperties.'http.query.params'.name]" doc:name="setNameVar"/>
         <set-variable variableName="city" value="#[message.inboundProperties.'http.query.params'.city]" doc:name="setCityVar"/>
-        <flow-ref name="validateAccountNameInput" doc:name="validateAccountNameInput Reference"/>
         <expression-component doc:name="build Query Condition"><![CDATA[flowVars.queryCond = "Name like '#[flowVars.name]%' ";
 if (flowVars.city != null) {
 	flowVars.queryCond += "and BillingCity = '#[flowVars.city]'"
 }	]]></expression-component>
     </sub-flow>
+    <sub-flow name="accountListToJsonSubFlow">
+        <choice doc:name="Choice">
+            <when expression="#[payload.size() &gt; 0 &amp;&amp; payload instanceof java.util.Iterator || payload instanceof java.util.List  &amp;&amp; payload[0].size()&gt;0]">
+                <dw:transform-message doc:name="Transform Message" metadata:id="19c38b7b-418c-44e4-908e-9c9214e8e5d0">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map ((payload01 , indexOfPayload01) -> {
+	BillingCountry: payload01.BillingCountry,
+	BillingCity: payload01.BillingCity,
+	BillingStreet: payload01.BillingStreet,
+	Phone: payload01.Phone,
+	BillingPostalCode: payload01.BillingPostalCode,
+	BillingState: payload01.BillingState,
+	Id: payload01.Id,
+	Name: payload01.Name
+})]]></dw:set-payload>
+                </dw:transform-message>
+            </when>
+            <otherwise>
+                <flow-ref name="404Subflow" doc:name="404Subflow"/>
+            </otherwise>
+        </choice>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <sub-flow name="404Subflow">
+        <set-payload value="{ &quot;message&quot; : &quot;Data not found!&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+        <set-property propertyName="http.status" value="404" doc:name="Code 404"/>
+    </sub-flow>
+    <sub-flow name="jsonBodyToObject">
+        <byte-array-to-object-transformer doc:name="Byte Array to Object"/>
+    </sub-flow>    
 </mule>

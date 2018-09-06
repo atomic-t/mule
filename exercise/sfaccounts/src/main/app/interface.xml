@@ -14,7 +14,7 @@ http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mul
         <flow-ref name="putByIdFlow" doc:name="Flow Reference"/>
     </flow>
     <flow name="delete:/sfaccounts/{ID}:salesforce-accounts-api-config">
-        <set-payload value="{&#xA;&quot;message&quot; : &quot;Account deleted successfully!      &#xA;&quot;&#xA;}" doc:name="Set Payload"/>
+        <flow-ref name="deleteByIdFlow" doc:name="Flow Reference"/>
     </flow>
     <flow name="get:/sfaccounts:salesforce-accounts-api-config">
         <flow-ref name="getFlow" doc:name="getFlow"/>
