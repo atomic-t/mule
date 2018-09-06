@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
-http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
     <apikit:config name="salesforce-accounts-api-config" raml="salesforce-accounts-api.raml" consoleEnabled="false" doc:name="Router"/>
     <flow name="salesforce-accounts-api-main">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/*" doc:name="HTTP"/>
         <apikit:router config-ref="salesforce-accounts-api-config" doc:name="APIkit Router"/>
         <exception-strategy ref="salesforce-accounts-api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
-    </flow>
-    <flow name="salesforce-accounts-api-console">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/console/*" doc:name="HTTP"/>
-        <apikit:console config-ref="salesforce-accounts-api-config" doc:name="APIkit Console"/>
     </flow>
     <flow name="put:/sfaccounts/{ID}:application/json:salesforce-accounts-api-config">
         <set-payload value="{&#xA;&quot;message&quot; : &quot;Account updated successfully!      &#xA;&quot;&#xA;}" doc:name="Set Payload"/>
@@ -23,36 +20,44 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
         <flow-ref name="getFlow" doc:name="getFlow"/>
     </flow>
     <flow name="get:/sfaccounts/{ID}:salesforce-accounts-api-config">
-        <set-payload value="{&#xA;      &quot;BillingCountry&quot;: &quot;&quot;,&#xA;      &quot;BillingCity&quot;: &quot;Singapore&quot;,&#xA;      &quot;BillingStreet&quot;: &quot;9 Tagore Lane\nSingapore, Singapore 787472\nSingapore&quot;,&#xA;      &quot;Phone&quot;: &quot;(650) 450-8810&quot;,&#xA;      &quot;BillingPostalCode&quot;: &quot;&quot;,&#xA;      &quot;BillingState&quot;: &quot;Singapore&quot;,&#xA;      &quot;Id&quot; : &quot;0010b00002CRBrnAAH&quot;,&#xA;      &quot;Name&quot;: &quot;United Oil &amp; Gas, Singapore&quot;&#xA;}" doc:name="Set Payload"/>
+        <flow-ref name="getByIdFlow" doc:name="getByIdFlow"/>
     </flow>
     <flow name="post:/sfaccounts:application/json:salesforce-accounts-api-config">
         <flow-ref name="postFlow" doc:name="postFlow"/>
     </flow>
+    <sub-flow name="setErrorMessage">
+        <expression-component doc:name="setErrorMessage"><![CDATA[method = message.inboundProperties.'http.method';
+uri = message.inboundProperties.'http.request.path';
+uri = uri!=null?uri:'';
+msg = method + " " + uri + (exception.cause.message != null && exception.cause.message != uri ? ': ' +exception.cause.message:'');
+payload = '{"message" : "'+msg+'"}';
+]]></expression-component>
+    </sub-flow>
     <apikit:mapping-exception-strategy name="salesforce-accounts-api-apiKitGlobalExceptionMapping">
         <apikit:mapping statusCode="404">
             <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
             <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
-            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload"/>
+            <flow-ref name="setErrorMessage" doc:name="populateErrorMessage"/>
         </apikit:mapping>
         <apikit:mapping statusCode="405">
             <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
             <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
-            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload"/>
+            <flow-ref name="setErrorMessage" doc:name="populateErrorMessage"/>
         </apikit:mapping>
         <apikit:mapping statusCode="415">
             <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
             <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
-            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload"/>
+            <flow-ref name="setErrorMessage" doc:name="populateErrorMessage"/>
         </apikit:mapping>
         <apikit:mapping statusCode="406">
             <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
             <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
-            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload"/>
+            <flow-ref name="setErrorMessage" doc:name="populateErrorMessage"/>
         </apikit:mapping>
         <apikit:mapping statusCode="400">
             <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
             <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
-            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload"/>
+            <flow-ref name="setErrorMessage" doc:name="populateErrorMessage"/>
         </apikit:mapping>
     </apikit:mapping-exception-strategy>
 </mule>

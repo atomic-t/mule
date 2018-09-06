@@ -32,7 +32,8 @@ http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mules
             <logger message="#[exception]" level="WARN" doc:name="Logger"/>
         </catch-exception-strategy>
         <catch-exception-strategy doc:name="All Other Exceptions Strategy">
-            <set-payload value="Opps... server exception occured. #[ ' \n' + exception]" doc:name="Set Payload"/>
+            <set-payload value="Opps... server exception occured:
+#[exception]" doc:name="Set Payload"/>
             <set-property propertyName="http.status" value="500" doc:name="Code 500"/>
             <logger message="#[exception]" level="ERROR" doc:name="Logger"/>
         </catch-exception-strategy>
