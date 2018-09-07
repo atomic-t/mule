@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mock="http://www.mulesoft.org/schema/mule/mock" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd ">
+    <spring:beans>
+        <spring:import resource="classpath:interface.xml" />
+    </spring:beans>
+    <munit:config mock-connectors="false" mock-inbounds="false" />
+    <http:request-config name="HTTP_Request_Configuration" host="localhost" port="8081" basePath="/api" />
+    <munit:test name="put:/sfaccounts/ID:application/json:salesforce-accounts-api-config-200-application/json-FlowTest" description="Verifying functionality of [put:/sfaccounts/ID:application/json:salesforce-accounts-api-config-200-application/json]">
+        <set-payload value="#[getResource('scaffolder/request/put_sfaccounts_{id}_application_json.json').asString()]" />
+        <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/sfaccounts/{ID}">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/put_200_sfaccounts_{id}_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="put:/sfaccounts/ID:application/json:salesforce-accounts-api-config-404-application/json-FlowTest" description="Verifying functionality of [put:/sfaccounts/ID:application/json:salesforce-accounts-api-config-404-application/json]">
+        <set-payload value="#[getResource('scaffolder/request/put_sfaccounts_{id}_application_json.json').asString()]" />
+        <http:request config-ref="HTTP_Request_Configuration" method="PUT" path="/sfaccounts/{ID}">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+            <http:success-status-code-validator values="404" />
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(404))]" doc:name="assert that - http.status eq 404" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/put_404_sfaccounts_{id}_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="delete:/sfaccounts/ID:salesforce-accounts-api-config-200-application/json-FlowTest" description="Verifying functionality of [delete:/sfaccounts/ID:salesforce-accounts-api-config-200-application/json]">
+        <http:request config-ref="HTTP_Request_Configuration" method="DELETE" path="/sfaccounts/{ID}">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/delete_200_sfaccounts_{id}_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="delete:/sfaccounts/ID:salesforce-accounts-api-config-404-application/json-FlowTest" description="Verifying functionality of [delete:/sfaccounts/ID:salesforce-accounts-api-config-404-application/json]">
+        <http:request config-ref="HTTP_Request_Configuration" method="DELETE" path="/sfaccounts/{ID}">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+            </http:request-builder>
+            <http:success-status-code-validator values="404" />
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(404))]" doc:name="assert that - http.status eq 404" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/delete_404_sfaccounts_{id}_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="get:/sfaccounts:salesforce-accounts-api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/sfaccounts:salesforce-accounts-api-config-200-application/json]">
+        <set-variable variableName="name" value="#['']" doc:name="name" />
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/sfaccounts">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:query-param paramName="name" value="#[flowVars['name']]" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/get_200_sfaccounts_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="get:/sfaccounts:salesforce-accounts-api-config-400-application/json-FlowTest" description="Verifying functionality of [get:/sfaccounts:salesforce-accounts-api-config-400-application/json]">
+        <set-variable variableName="name" value="#['']" doc:name="name" />
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/sfaccounts">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:query-param paramName="name" value="#[flowVars['name']]" />
+            </http:request-builder>
+            <http:success-status-code-validator values="400" />
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(400))]" doc:name="assert that - http.status eq 400" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/get_400_sfaccounts_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="get:/sfaccounts:salesforce-accounts-api-config-404-application/json-FlowTest" description="Verifying functionality of [get:/sfaccounts:salesforce-accounts-api-config-404-application/json]">
+        <set-variable variableName="name" value="#['']" doc:name="name" />
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/sfaccounts">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:query-param paramName="name" value="#[flowVars['name']]" />
+            </http:request-builder>
+            <http:success-status-code-validator values="404" />
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(404))]" doc:name="assert that - http.status eq 404" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/get_404_sfaccounts_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="get:/sfaccounts/ID:salesforce-accounts-api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/sfaccounts/ID:salesforce-accounts-api-config-200-application/json]">
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/sfaccounts/{ID}">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/get_200_sfaccounts_{id}_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="get:/sfaccounts/ID:salesforce-accounts-api-config-404-application/json-FlowTest" description="Verifying functionality of [get:/sfaccounts/ID:salesforce-accounts-api-config-404-application/json]">
+        <http:request config-ref="HTTP_Request_Configuration" method="GET" path="/sfaccounts/{ID}">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+            </http:request-builder>
+            <http:success-status-code-validator values="404" />
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(404))]" doc:name="assert that - http.status eq 404" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/get_404_sfaccounts_{id}_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="post:/sfaccounts:application/json:salesforce-accounts-api-config-201-application/json-FlowTest" description="Verifying functionality of [post:/sfaccounts:application/json:salesforce-accounts-api-config-201-application/json]">
+        <set-payload value="#[getResource('scaffolder/request/post_sfaccounts_application_json.json').asString()]" />
+        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/sfaccounts">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(201))]" doc:name="assert that - http.status eq 201" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/post_201_sfaccounts_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+    <munit:test name="post:/sfaccounts:application/json:salesforce-accounts-api-config-400-application/json-FlowTest" description="Verifying functionality of [post:/sfaccounts:application/json:salesforce-accounts-api-config-400-application/json]">
+        <set-payload value="#[getResource('scaffolder/request/post_sfaccounts_application_json.json').asString()]" />
+        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/sfaccounts">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+            <http:success-status-code-validator values="400" />
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(400))]" doc:name="assert that - http.status eq 400" />
+        <munit:assert-on-equals message="The response payload is not correct!" expectedValue="#[getResource('scaffolder/response/post_400_sfaccounts_application_json.json').asString()]" actualValue="#[payload]" doc:name="assert that - payload is as expected" />
+    </munit:test>
+</mule>

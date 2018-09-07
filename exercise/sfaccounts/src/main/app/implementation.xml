@@ -36,7 +36,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
                 <set-payload value="{ &quot;message&quot; : &quot;Account id=#[flowVars.ID] saved successfully!&quot;}" mimeType="application/json" doc:name="Set Payload"/>
             </otherwise>
         </choice>
-        <logger message="#[payload]" level="INFO" doc:name="Copy_of_Logger"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
     </sub-flow>
     <flow name="getFlow">
         <flow-ref name="setParametersSubFlow" doc:name="setParametersSubFlow"/>
