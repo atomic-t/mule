@@ -1,36 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:secure-property-placeholder="http://www.mulesoft.org/schema/mule/secure-property-placeholder" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+<mule xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
+	xmlns:secure-property-placeholder="http://www.mulesoft.org/schema/mule/secure-property-placeholder" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ss="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mulesoft.org/schema/mule/secure-property-placeholder/current/mule-secure-property-placeholder.xsd
 http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
-http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
-    <http:listener-config name="HTTP_Listener_Configuration" protocol="HTTPS" host="0.0.0.0" port="${http.lisener.port}" tlsContext-ref="Local_TLS_Context" doc:name="HTTP Listener Configuration"/>
-    <http:request-config name="HTTP_Request_Configuration" protocol="HTTPS" host="localhost" port="${http.lisener.port}" tlsContext-ref="Local_Request_TLS_Context" doc:name="HTTP Request Configuration"/>
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.0.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" protocol="HTTPS" host="0.0.0.0" port="${http.lisener.port}" doc:name="HTTP Listener Configuration" tlsContext-ref="Local_TLS_Context">
+    </http:listener-config>
+    
+        <http:request-config name="HTTP_Request_Configuration" host="localhost" port="${http.lisener.port}"  doc:name="HTTP Request Configuration" protocol="HTTPS" tlsContext-ref="Local_Request_TLS_Context"/>
+<spring:beans>
+   <ss:authentication-manager alias="authenticationManager">
+     <ss:authentication-provider>
+       <ss:user-service id="userService">
+          <ss:user name="admin" password="admin" authorities="ROLE_ADMIN" />
+          <ss:user name="user1" password="user1" authorities="ROLE_USER" />
+        </ss:user-service>
+    </ss:authentication-provider>
+  </ss:authentication-manager>
+</spring:beans>
     <sfdc:config name="Salesforce__Basic_Authentication" username="${sfdc.username}" password="${sfdc.password}" securityToken="${sfdc.token}" doc:name="Salesforce: Basic Authentication"/>
     <tls:context name="Local_TLS_Context" doc:name="Listener TLS Context">
         <tls:key-store type="${tls.type}" path="${tls.ks.path}" alias="${tls.alias}" keyPassword="${tls.keypassword}" password="${tls.password}" algorithm="${tls.algorithm}"/>
     </tls:context>
     <tls:context name="Local_Request_TLS_Context" doc:name="Request TLS Context">
         <tls:trust-store path="${tls.ts.path}" password="!QAZ@WSX" type="jks" algorithm="${tls.algorithm}" insecure="true"/>
-    </tls:context>
-    <validation:config name="Invalid_Parameter_Validation_Configuration" doc:name="Validation Configuration"/>
+    </tls:context>    
+    <validation:config name="Invalid_Parameter_Validation_Configuration" doc:name="Validation Configuration" />
+    
     <secure-property-placeholder:config name="Secure_Property_Placeholder" key="${secure.key}" location="sfaccounts-secure-${env}.properties" doc:name="Secure Property Placeholder"/>
     <configuration defaultExceptionStrategy-ref="globalChoice_Exception_Strategy" doc:name="Configuration">
         <http:config useTransportForUris="false"/>
     </configuration>
+    <mule-ss:security-manager name="Spring_Security_Provider" doc:name="Spring Security Provider">
+        <mule-ss:delegate-security-provider name="memory-provider" delegate-ref="authenticationManager"/>
+    </mule-ss:security-manager>
     <choice-exception-strategy name="globalChoice_Exception_Strategy">
         <catch-exception-strategy when="#[exception.causedBy(sfaccounts.exception.InvalidParameterException) || exception.causedBy(org.mule.extension.validation.api.MultipleValidationException) ]" doc:name="Invalid Parameter Exception Strategy">
             <set-payload value="{ &quot;message&quot; : &quot;#[exception.message]&quot;}" mimeType="application/json" doc:name="Set Payload Msg"/>
             <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
             <logger message="#[exception]" level="WARN" doc:name="Logger"/>
         </catch-exception-strategy>
+        <catch-exception-strategy when="#[exception.causedBy(org.mule.api.security.UnauthorisedException) || exception.causedBy(org.mule.api.security.NotPermittedException)]" doc:name="Catch Exception Strategy">
+            <set-payload value="{ &quot;message&quot; : &quot;#[exception.message.replace('&quot;',&quot;'&quot;)]&quot;}" mimeType="application/json" doc:name="Set Payload Msg"/>
+            <set-property propertyName="http.status" value="403" doc:name="Code 403"/>
+            <logger message="#[exception]" level="WARN" doc:name="Copy_of_Logger"/>
+        </catch-exception-strategy>
         <catch-exception-strategy doc:name="All Other Exceptions Strategy">
-            <set-payload value="{ &quot;message&quot; : &quot;Server exception occured: #[exception]&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+            <set-payload value="{ 'message' : 'Server exception occured: #[exception]'}" doc:name="Set Payload" mimeType="application/json"/>
             <set-property propertyName="http.status" value="500" doc:name="Code 500"/>
             <logger message="#[exception]" level="ERROR" doc:name="Logger"/>
-        </catch-exception-strategy>
+        </catch-exception-strategy>        
     </choice-exception-strategy>
 </mule>

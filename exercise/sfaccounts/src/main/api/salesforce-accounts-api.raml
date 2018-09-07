@@ -1,9 +1,13 @@
 #%RAML 1.0 
 title: Salesforce Accounts API
+securitySchemes:
+    basic:
+      type: Basic Authentication        
 types: 
   Account: !include datatypes/Account.raml
 /sfaccounts:
   get:
+    securedBy: [basic]
     displayName: query Salesforce accounts
     queryParameters: 
       name:
@@ -32,6 +36,7 @@ types:
               message: |
                 Cannot find any accounts.                
   post:
+    securedBy: [basic]
     displayName: create salesforce account
     body: 
       application/json:
@@ -52,6 +57,7 @@ types:
                 Error: Input parameter name and street cannot be empty   
   /{ID}:
     get:
+      securedBy: [basic]
       displayName: get a specific account by id
       responses: 
         200:
@@ -68,6 +74,7 @@ types:
       
 
     put:
+      securedBy: [basic]
       displayName: update account with id={ID}
       body: 
         application/json:
@@ -87,6 +94,7 @@ types:
                 message: |
                   Account with id={ID} not found!            
     delete:
+      securedBy: [basic]
       displayName: delete the account with id={ID}
       responses: 
         200:

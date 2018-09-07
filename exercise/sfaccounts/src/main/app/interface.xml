@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
+	xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
@@ -10,19 +12,33 @@ http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mul
         <apikit:router config-ref="salesforce-accounts-api-config" doc:name="APIkit Router"/>
         <exception-strategy ref="salesforce-accounts-api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
     </flow>
+    <sub-flow name="authenticationUserSubflow">
+        <mule-ss:http-security-filter realm="mule-realm" securityProviders="memory-provider"></mule-ss:http-security-filter>
+    </sub-flow>
+    <sub-flow name="authenticationAdminSubflow">
+        <mule-ss:http-security-filter realm="mule-realm" securityProviders="memory-provider"></mule-ss:http-security-filter>
+        <mule-ss:authorization-filter requiredAuthorities="ROLE_ADMIN"></mule-ss:authorization-filter>
+    </sub-flow>
     <flow name="put:/sfaccounts/{ID}:application/json:salesforce-accounts-api-config">
+        <flow-ref name="authenticationUserSubflow" doc:name="authentication_UserSubflow"/>
         <flow-ref name="putByIdFlow" doc:name="Flow Reference"/>
     </flow>
+   
     <flow name="delete:/sfaccounts/{ID}:salesforce-accounts-api-config">
+        <flow-ref name="authenticationAdminSubflow" doc:name="authenticationAdminSubflow"/>
+
         <flow-ref name="deleteByIdFlow" doc:name="Flow Reference"/>
     </flow>
     <flow name="get:/sfaccounts:salesforce-accounts-api-config">
+        <flow-ref name="authenticationUserSubflow" doc:name="authentication_UserSubflow"/>
         <flow-ref name="getFlow" doc:name="getFlow"/>
     </flow>
     <flow name="get:/sfaccounts/{ID}:salesforce-accounts-api-config">
+        <flow-ref name="authenticationUserSubflow" doc:name="authentication_UserSubflow"/>
         <flow-ref name="getByIdFlow" doc:name="getByIdFlow"/>
     </flow>
     <flow name="post:/sfaccounts:application/json:salesforce-accounts-api-config">
+        <flow-ref name="authenticationUserSubflow" doc:name="authentication_UserSubflow"/>
         <flow-ref name="postFlow" doc:name="postFlow"/>
     </flow>
     <sub-flow name="setErrorMessage">
