@@ -33,7 +33,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
                 <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
             </when>
             <otherwise>
-                <set-payload value="{ &quot;message&quot; : &quot;Account id=#[flowVars.ID] saved successfully!&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+                <set-payload value="{&quot;message&quot; : &quot;Account #[flowVars.ID] saved successfully!&quot;}" mimeType="application/json" doc:name="Set Payload"/>
             </otherwise>
         </choice>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
@@ -113,6 +113,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
                 <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce Create">
                     <sfdc:objects ref="#[payload]"/>
                 </sfdc:create>
+                <set-variable variableName="ID" value="#['for &quot;' + flowVars.input.Name +'&quot;']" doc:name="Variable"/>
                 <flow-ref name="singleSaveCheckSubflow" doc:name="singleSaveCheckSubflow"/>
             </otherwise>
         </choice>
@@ -204,6 +205,27 @@ payload map ((payload01 , indexOfPayload01) -> {
         </choice>
         <logger message="#[payload]" level="INFO" doc:name="Logger"/>
     </sub-flow>
+    <flow name="testFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccounts_test" allowedMethods="GET" doc:name="HTTP"/>
+        <set-payload value="{
+      &quot;BillingCountry&quot;: &quot;&quot;,
+      &quot;BillingCity&quot;: &quot;Singapore&quot;,
+      &quot;BillingStreet&quot;: &quot;9 Tagore Lane\nSingapore, Singapore 787472\nSingapore&quot;,
+      &quot;Phone&quot;: &quot;(650) 450-8810&quot;,
+      &quot;BillingPostalCode&quot;: &quot;&quot;,
+      &quot;BillingState&quot;: &quot;Singapore&quot;,
+      &quot;Name&quot;: &quot;{accountName}&quot;
+}" doc:name="Set Payload" mimeType="application/json"/>
+        <set-variable variableName="accountName" value="#[&quot;MUnit_&quot; + Math.floor(100*Math.random());]" doc:name="Set Account Name"/>
+        <expression-component doc:name="replaceName"><![CDATA[payload = payload.replace("{accountName}",flowVars.accountName);]]></expression-component>
+        <http:request config-ref="HTTP_Request_Configuration" path="/sfaccounts" method="POST" doc:name="HTTP" metadata:id="68bd9d92-e000-4702-a45b-73f79eeaf890">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json"/>
+                <http:header headerName="Content-Type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+    </flow>
     <sub-flow name="404Subflow">
         <set-payload value="{ &quot;message&quot; : &quot;Data not found!&quot;}" mimeType="application/json" doc:name="Set Payload"/>
         <set-property propertyName="http.status" value="404" doc:name="Code 404"/>

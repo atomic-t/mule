@@ -1,3 +1,5 @@
 org.eclipse.jdt.core.prefs
 exercise/sfaccounts/target
 exercise/sfaccounts/catalog
+exercise/sfaccounts/reports
+exercise/sfaccounts/.mule
