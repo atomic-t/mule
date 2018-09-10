@@ -113,7 +113,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
                 <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce Create">
                     <sfdc:objects ref="#[payload]"/>
                 </sfdc:create>
-                <set-variable variableName="ID" value="#['for &quot;' + flowVars.input.Name +'&quot;']" doc:name="Variable"/>
+                <set-variable variableName="ID" value="#[&quot;for '&quot; + flowVars.input.Name +&quot;'&quot;]" doc:name="Variable"/>
                 <flow-ref name="singleSaveCheckSubflow" doc:name="singleSaveCheckSubflow"/>
             </otherwise>
         </choice>

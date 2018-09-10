@@ -20,7 +20,9 @@ http://www.springframework.org/schema/security http://www.springframework.org/sc
     <http:listener-config name="HTTP_Listener_Configuration" protocol="HTTPS" host="0.0.0.0" port="${http.lisener.port}" doc:name="HTTP Listener Configuration" tlsContext-ref="Local_TLS_Context">
     </http:listener-config>
     
-        <http:request-config name="HTTP_Request_Configuration" host="localhost" port="${http.lisener.port}"  doc:name="HTTP Request Configuration" protocol="HTTPS" tlsContext-ref="Local_Request_TLS_Context"/>
+        <http:request-config name="HTTP_Request_Configuration" host="localhost" port="${http.lisener.port}"  doc:name="HTTP Request Configuration" protocol="HTTPS" tlsContext-ref="Local_Request_TLS_Context">
+        <http:basic-authentication username="${auth.user1}" password="${auth.user1.pwd}" preemptive="true"/>
+    </http:request-config>
 <spring:beans>
    <ss:authentication-manager alias="authenticationManager">
      <ss:authentication-provider>
@@ -59,7 +61,7 @@ http://www.springframework.org/schema/security http://www.springframework.org/sc
             <logger message="#[exception]" level="WARN" doc:name="Copy_of_Logger"/>
         </catch-exception-strategy>
         <catch-exception-strategy doc:name="All Other Exceptions Strategy">
-            <set-payload value="{ 'message' : 'Server exception occured: #[exception]'}" doc:name="Set Payload" mimeType="application/json"/>
+            <set-payload value="{ &quot;message&quot; : &quot;Server exception occured: #[exception]&quot;}" doc:name="Set Payload" mimeType="application/json"/>
             <set-property propertyName="http.status" value="500" doc:name="Code 500"/>
             <logger message="#[exception]" level="ERROR" doc:name="Logger"/>
         </catch-exception-strategy>        

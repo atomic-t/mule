@@ -1,0 +1,720 @@
+{
+	"info": {
+		"_postman_id": "1de653ad-0d4b-429f-bb1b-7ad3c3114b79",
+		"name": "sfaccounts",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "GET-200",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts"
+					]
+				},
+				"description": "200-response"
+			},
+			"response": []
+		},
+		{
+			"name": "GET-400-missing \"name\"",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts"
+					]
+				},
+				"description": "400-response: missing required parameter"
+			},
+			"response": []
+		},
+		{
+			"name": "GET-403-no auth",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts?name=API test",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "API test"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET-403-wrong pwd",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts?name=API test",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "API test"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET-404-no data",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts?name=gg",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "gg"
+						}
+					]
+				},
+				"description": "200-response"
+			},
+			"response": []
+		},
+		{
+			"name": "GET/{ID}-200",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCity\": \"Singapore\",\n    \"BillingStreet\": \"9 Tagore Lane\\nSingapore, Singapore 787472\\nSingapore\",\n    \"Phone\": \"(650) 450-8810\",\n    \"BillingPostalCode\": \"ziptest\",\n    \"BillingState\": \"Singapore\",\n    \"Id\": \"0010b00002CTW2SAAX\",\n    \"Name\": \"API test6\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b00002CTVlkAAH",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b00002CTVlkAAH"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET/{ID}-404",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCity\": \"Singapore\",\n    \"BillingStreet\": \"9 Tagore Lane\\nSingapore, Singapore 787472\\nSingapore\",\n    \"Phone\": \"(650) 450-8810\",\n    \"BillingPostalCode\": \"ziptest\",\n    \"BillingState\": \"Singapore\",\n    \"Id\": \"0010b00002CTW2SAAX\",\n    \"Name\": \"API test6\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b00002CTVlkA3AH",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b00002CTVlkA3AH"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST-201",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "  {\n        \"BillingCountry\": \"\",\n        \"BillingCity\": \"Taipei City\",\n        \"BillingStreet\": \"123 Somestreet\",\n        \"Phone\": \"(234) 450-8810\",\n        \"BillingPostalCode\": \"\",\n        \"BillingState\": \"\",\n        \"Name\": \"API test22\"\n  }"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST-400-name already exists",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "  {\n        \"BillingCountry\": \"\",\n        \"BillingCity\": \"Taipei City\",\n        \"BillingStreet\": \"123 Somestreet\",\n        \"Phone\": \"(234) 450-8810\",\n        \"BillingPostalCode\": \"\",\n        \"BillingState\": \"\",\n        \"Name\": \"API test22\"\n  }"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST-400-street cannot be empty",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "  {\n        \"BillingCountry\": \"\",\n        \"BillingCity\": \"Taipei City\",\n        \"BillingStreet\": \"\",\n        \"Phone\": \"(234) 450-8810\",\n        \"BillingPostalCode\": \"\",\n        \"BillingState\": \"\",\n        \"Name\": \"API test22\"\n  }"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT/{ID}-200",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCountry\": \"\",\n    \"BillingCity\": null,\n    \"BillingStreet\": \"street 123\",\n    \"Phone\": null,\n    \"BillingPostalCode\": null,\n    \"BillingState\": \"Singapore2\",\n    \"Name\": \"API test21\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b00002DJymsAAD",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b00002DJymsAAD"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT/{ID}-400-dup name",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCountry\": \"\",\n    \"BillingCity\": null,\n    \"BillingStreet\": \"street 123\",\n    \"Phone\": null,\n    \"BillingPostalCode\": null,\n    \"BillingState\": \"Singapore2\",\n    \"Name\": \"API test21\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b0000fDJymsAAD",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b0000fDJymsAAD"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT/{ID}-400-wrong id",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCountry\": \"\",\n    \"BillingCity\": null,\n    \"BillingStreet\": \"street 123\",\n    \"Phone\": null,\n    \"BillingPostalCode\": null,\n    \"BillingState\": \"Singapore2\",\n    \"Name\": \"API test21\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b0000fDJymsxAAD",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b0000fDJymsxAAD"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE-200",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "admin",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCountry\": \"\",\n    \"BillingCity\": null,\n    \"BillingStreet\": \"street 123\",\n    \"Phone\": null,\n    \"BillingPostalCode\": null,\n    \"BillingState\": \"Singapore2\",\n    \"Name\": \"API test6\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b00002DJynRAAT",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b00002DJynRAAT"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE-400-wrong id",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "admin",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCountry\": \"\",\n    \"BillingCity\": null,\n    \"BillingStreet\": \"street 123\",\n    \"Phone\": null,\n    \"BillingPostalCode\": null,\n    \"BillingState\": \"Singapore2\",\n    \"Name\": \"API test6\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b00002DJ2RTgAAP",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b00002DJ2RTgAAP"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE-400-already deleted",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "admin",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCountry\": \"\",\n    \"BillingCity\": null,\n    \"BillingStreet\": \"street 123\",\n    \"Phone\": null,\n    \"BillingPostalCode\": null,\n    \"BillingState\": \"Singapore2\",\n    \"Name\": \"API test6\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b00002DJRTgAAP",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b00002DJRTgAAP"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE-403-no permission (requires admin access)",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "user1",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user1",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n    \"BillingCountry\": \"\",\n    \"BillingCity\": null,\n    \"BillingStreet\": \"street 123\",\n    \"Phone\": null,\n    \"BillingPostalCode\": null,\n    \"BillingState\": \"Singapore2\",\n    \"Name\": \"API test6\"\n}\n"
+				},
+				"url": {
+					"raw": "https://localhost:8081/sfaccounts/0010b00002DJRTgAAP",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"sfaccounts",
+						"0010b00002DJRTgAAP"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
