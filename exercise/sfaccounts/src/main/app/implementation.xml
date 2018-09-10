@@ -134,7 +134,8 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 	BillingState: payload.BillingState,
 	BillingPostalCode: payload.BillingPostalCode,
 	BillingCountry: payload.BillingCountry,
-	Phone: payload.Phone
+	Phone: payload.Phone,
+	fieldsToNull:  (payload filter ($ == null or $ == '') pluck $$ as :string)
 }]]></dw:set-payload>
         </dw:transform-message>
         <validation:all doc:name="Validate Input">
@@ -230,7 +231,25 @@ payload map ((payload01 , indexOfPayload01) -> {
         <set-payload value="{ &quot;message&quot; : &quot;Data not found!&quot;}" mimeType="application/json" doc:name="Set Payload"/>
         <set-property propertyName="http.status" value="404" doc:name="Code 404"/>
     </sub-flow>
-    <sub-flow name="jsonBodyToObject">
-        <byte-array-to-object-transformer doc:name="Byte Array to Object"/>
-    </sub-flow>    
+    <flow name="testFlow2">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfaccounts_test2" allowedMethods="GET" doc:name="Copy_of_HTTP"/>
+        <set-payload value="{       &quot;BillingCountry&quot;: &quot;&quot;,       &quot;BillingCity&quot;: &quot;Singapore&quot;,       &quot;BillingStreet&quot;: &quot;9 Tagore Lane\nSingapore, Singapore 787472\nSingapore&quot;,       &quot;Phone&quot;: &quot;(650) 450-8810&quot;,       &quot;BillingPostalCode&quot;: &quot;&quot;,       &quot;BillingState&quot;: &quot;Singapore&quot;,       &quot;Name&quot;: &quot;{accountName}&quot; }" mimeType="application/json" doc:name="Set Payload"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="e474893a-3b6f-4ec1-af6f-30fd4d84791c">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	Name: payload.Name,
+	BillingStreet: payload.BillingStreet,
+	BillingCity: payload.BillingCity,
+	BillingState: payload.BillingState,
+	BillingPostalCode: payload.BillingPostalCode,
+	BillingCountry: payload.BillingCountry,
+	Phone: payload.Phone,
+	fieldsToNull:  (payload filter ($ == null or $ == '') pluck $$ as :string)
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    
 </mule>
