@@ -1,0 +1,11 @@
+{
+    "inputMessageMetadata": {},
+    "outputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "#_custom_mule_metadata_type_#",
+            "typeId": "BillingAccount_java"
+        }
+    },
+    "id": "62dbac29-6954-44c6-a050-b845af80685d",
+    "version": "5.2.0.0"
+}

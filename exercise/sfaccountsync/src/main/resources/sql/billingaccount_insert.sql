@@ -1,0 +1,22 @@
+INSERT INTO `billingaccount`
+(`id`,
+`name`,
+`city`,
+`street`,
+`state`,
+`phone`,
+`postalcode`,
+`country`,
+`lastSyncedTime`
+)
+VALUES
+(:id,
+:name,
+:city,
+:street,
+:state,
+:phone,
+:postalCode,
+:country,
+:lastSyncedTime
+)

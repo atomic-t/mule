@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:secure-property-placeholder="http://www.mulesoft.org/schema/mule/secure-property-placeholder" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mulesoft.org/schema/mule/secure-property-placeholder/current/mule-secure-property-placeholder.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <sfdc:config name="Salesforce__Basic_Authentication" username="${sfdc.username}" password="${sfdc.password}" securityToken="${sfdc.token}" doc:name="Salesforce: Basic Authentication"/>
+    <db:mysql-config name="MySQL_Configuration" host="${db.host}" port="${db.port}" user="${db.user}" password="${db.pwd}" database="${db.database}" doc:name="MySQL Configuration">
+        <db:connection-properties>
+            <db:property key="serverTimezone" value="America/New_York"/>
+            <db:property key="useLegacyDatetimeCode" value="false"/>
+        </db:connection-properties>
+    </db:mysql-config>
+    <secure-property-placeholder:config name="Secure_Property_Placeholder" key="${secure.key}" location="sfaccountsync-secure-${env}.properties" doc:name="Secure Property Placeholder"/>
+    <choice-exception-strategy name="globalChoice_Exception_Strategy">
+        <catch-exception-strategy doc:name="All Other Exceptions Strategy">
+            <set-payload value="{ &quot;message&quot; : &quot;Server exception occured: #[exception]&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+            <set-property propertyName="http.status" value="500" doc:name="Code 500"/>
+            <logger message="#[exception]" level="ERROR" doc:name="Logger"/>
+        </catch-exception-strategy>
+    </choice-exception-strategy>
+</mule>
