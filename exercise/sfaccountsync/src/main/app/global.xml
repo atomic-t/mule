@@ -10,6 +10,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
         <db:connection-properties>
             <db:property key="serverTimezone" value="America/New_York"/>
             <db:property key="useLegacyDatetimeCode" value="false"/>
+            <db:property key="useSSL" value="false"/>
         </db:connection-properties>
     </db:mysql-config>
     <secure-property-placeholder:config name="Secure_Property_Placeholder" key="${secure.key}" location="sfaccountsync-secure-${env}.properties" doc:name="Secure Property Placeholder"/>
