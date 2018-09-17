@@ -1,4 +1,4 @@
-<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
     xmlns:spring="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
@@ -14,7 +14,9 @@ http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/ht
 http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
-http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
     <sub-flow name="singleSaveCheckSubflow">
         <choice doc:name="Choice">
             <when expression="#[payload.success == false]">
@@ -86,34 +88,34 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
                 <validation:is-not-empty value="#[payload['BillingStreet']]" message="BillingStreet cannot be empty" exceptionClass="java.lang.IllegalArgumentException"/>
             </validation:validations>
         </validation:all>
-        <set-variable variableName="input" value="#[payload]" doc:name="save input body"/>
-        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Name FROM Account WHERE Name = '#[payload.Name]'" doc:name="check Name Existence"/>
-        <set-variable variableName="exists" value="#[payload.size() &gt; 0]" doc:name="Variable"/>
+        <enricher source="#[payload.size() &gt; 0]" target="#[flowVars.exists]" doc:name="Message Enricher">
+            <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT Name FROM Account WHERE Name = '#[payload.Name]'" doc:name="check Name Existence"/>
+        </enricher>
         <choice doc:name="Choice">
-            <when expression="#[payload.size() &gt; 0]">
-                <set-payload value="{ &quot;message&quot; : &quot;Account with such name '#[flowVars.input.Name]' already exists, cannot create a new one&quot;}" doc:name="Account already exists"/>
+            <when expression="#[flowVars.exists]">
+                <set-payload value="{ &quot;message&quot; : &quot;Account with such name '#[payload.Name]' already exists, cannot create a new one&quot;}" doc:name="Account already exists"/>
                 <set-property propertyName="http.status" value="400" doc:name="Code 400"/>
             </when>
             <otherwise>
-                <dw:transform-message doc:name="restore input" metadata:id="02ae39d7-395a-41cd-acbb-4bdb172dab87">
+                <set-variable variableName="ID" value="#[&quot;for '&quot; + payload.Name +&quot;'&quot;]" doc:name="store ID for create"/>
+                <dw:transform-message doc:name="map input" metadata:id="02ae39d7-395a-41cd-acbb-4bdb172dab87">
                     <dw:input-variable variableName="input"/>
                     <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
 [{
-	Name: flowVars.input.Name,
-	BillingStreet: flowVars.input.BillingStreet,
-	BillingCity: flowVars.input.BillingCity,
-	BillingState: flowVars.input.BillingState,
-	BillingPostalCode: flowVars.input.BillingPostalCode,
-	BillingCountry: flowVars.input.BillingCountry,
-	Phone: flowVars.input.Phone
+	Name: payload.Name,
+	BillingStreet: payload.BillingStreet,
+	BillingCity: payload.BillingCity,
+	BillingState: payload.BillingState,
+	BillingPostalCode: payload.BillingPostalCode,
+	BillingCountry: payload.BillingCountry,
+	Phone: payload.Phone
 }]]]></dw:set-payload>
                 </dw:transform-message>
                 <sfdc:create config-ref="Salesforce__Basic_Authentication" type="Account" doc:name="Salesforce Create">
                     <sfdc:objects ref="#[payload]"/>
                 </sfdc:create>
-                <set-variable variableName="ID" value="#[&quot;for '&quot; + flowVars.input.Name +&quot;'&quot;]" doc:name="Variable"/>
                 <flow-ref name="singleSaveCheckSubflow" doc:name="singleSaveCheckSubflow"/>
             </otherwise>
         </choice>
@@ -248,6 +250,22 @@ payload map ((payload01 , indexOfPayload01) -> {
 	BillingCountry: payload.BillingCountry,
 	Phone: payload.Phone,
 	fieldsToNull:  (payload filter ($ == null or $ == '') pluck $$ as :string)
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Transform Message" metadata:id="0638c931-5fc0-4def-a4f6-19df7d0469f8">
+            <dw:input-payload doc:sample="empty.xml" mimeType="application/xml"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	test: '' is :empty,
+	test1: null is :empty,
+	test2: null is :null,
+	test3: '' default 'asdf',
+	test4: null default 'asdf',
+	test5: payload.hello.test?,
+	test6: payload.hello.test.notExist?,
+	test7: payload.hello.test.notExist default 'asdf'
 }]]></dw:set-payload>
         </dw:transform-message>
     </flow>
